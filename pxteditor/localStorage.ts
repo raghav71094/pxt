@@ -28,4 +28,20 @@ namespace pxt.storage {
         }
         keys.forEach(key => window.localStorage.removeItem(key));
     }
+
+    export function isLocalStorageAvailable(): boolean {
+        let testKey = targetKey("local-storage-test-key")
+        try {
+            window.localStorage.setItem(testKey, testKey)
+            window.localStorage.removeItem(testKey)
+            return typeof window.localStorage === "object"
+        }
+        catch (e) {
+            //If the browser doesn't support local storage at all then a null
+            //reference exception will get thrown. If the browser is Safari in
+            //private browsing mode then localStorage is available as an object,
+            //but attempting to modify it will cause an exception to be thrown
+            return false
+        }
+    }
 }
