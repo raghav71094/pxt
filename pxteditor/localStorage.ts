@@ -1,32 +1,60 @@
 namespace pxt.storage {
+    let inMemoryLocalStorage: pxt.Map<string> = {}
+
     export function storageId(): string {
         let id = pxt.appTarget ? pxt.appTarget.id : (<any>window).pxtConfig ? (<any>window).pxtConfig.targetId : '';
         return id;
     }
+
     function targetKey(key: string): string {
         return storageId() + '/' + key;
     }
+
     export function setLocal(key: string, value: string) {
-        window.localStorage[targetKey(key)] = value;
+        key = targetKey(key)
+        if (isLocalStorageAvailable()) {
+            window.localStorage[key] = value
+        }
+        else {
+            inMemoryLocalStorage[key] = value
+        }
     }
 
     export function getLocal(key: string): string {
-        return window.localStorage[targetKey(key)];
+        key = targetKey(key)
+        if (isLocalStorageAvailable()) {
+            return window.localStorage[key]
+        }
+        else if (key in inMemoryLocalStorage) {
+            return inMemoryLocalStorage[key]
+        }
+        return null
     }
 
     export function removeLocal(key: string) {
-        window.localStorage.removeItem(targetKey(key));
+        key = targetKey(key)
+        if (isLocalStorageAvailable()) {
+            window.localStorage.removeItem(key)
+        }
+        else if (key in inMemoryLocalStorage) {
+            delete inMemoryLocalStorage[key]
+        }
     }
 
     export function clearLocal() {
-        let prefix = targetKey('');
-        let keys: string[] = [];
-        for (let i = 0; i < window.localStorage.length; ++i) {
-            let key = window.localStorage.key(i);
-            if (key.indexOf(prefix) == 0)
-                keys.push(key);
+        if (isLocalStorageAvailable()) {
+            let prefix = targetKey('');
+            let keys: string[] = [];
+            for (let i = 0; i < window.localStorage.length; ++i) {
+                let key = window.localStorage.key(i);
+                if (key.indexOf(prefix) == 0)
+                    keys.push(key);
+            }
+            keys.forEach(key => window.localStorage.removeItem(key));
         }
-        keys.forEach(key => window.localStorage.removeItem(key));
+        else {
+            inMemoryLocalStorage = {}
+        }
     }
 
     export function isLocalStorageAvailable(): boolean {
