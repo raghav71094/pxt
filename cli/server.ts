@@ -13,11 +13,13 @@ import * as util from 'util';
 import U = pxt.Util;
 import Cloud = pxt.Cloud;
 
+const userProjectsDirName = U.lf("Projects");
+
 let root = ""
 let dirs = [""]
 let simdirs = [""]
 let docfilesdirs = [""]
-let userProjectsDir = path.join(os.homedir(), U.lf("My Coding Projects"));
+let userProjectsDir = path.join(process.cwd(), userProjectsDirName);
 let docsDir = ""
 let tempDir = ""
 let packagedDir = ""
@@ -55,6 +57,29 @@ function setupRootDir() {
     tempDir = path.join(root, "built/docstmp")
     packagedDir = path.join(root, "built/packaged")
     setupDocfilesdirs()
+    setupProjectsDir()
+}
+
+function setupProjectsDir() {
+    if (serveOptions && serveOptions.electron) {
+        if (/^win/.test(os.platform())) {
+            // Use registry to query path of My Documents folder
+            let regQueryResult = "";
+
+            try {
+                regQueryResult = child_process.execSync("reg query \"HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders\" /v Personal").toString();
+                let documentsPath = /personal(?:\s+\w+)\s+(.*)/gmi.exec(regQueryResult)[1];
+                userProjectsDir = path.resolve(documentsPath, userProjectsDirName);
+            } catch (e) {
+                // Fallback to Home directory
+                userProjectsDir = path.join(os.homedir(), userProjectsDirName);
+            }
+        } else {
+            userProjectsDir = path.join(os.homedir(), userProjectsDirName);
+        }
+    }
+
+    nodeutil.mkdirP(userProjectsDir);
 }
 
 let statAsync = Promise.promisify(fs.stat)
@@ -98,7 +123,6 @@ type FsFile = pxt.FsFile;
 type FsPkg = pxt.FsPkg;
 
 function readPkgAsync(logicalDirname: string, fileContents = false): Promise<FsPkg> {
-    nodeutil.mkdirP(userProjectsDir);
     let dirname = path.join(userProjectsDir, logicalDirname)
     return readFileAsync(path.join(dirname, pxt.configName))
         .then(buf => {
@@ -131,7 +155,6 @@ function readPkgAsync(logicalDirname: string, fileContents = false): Promise<FsP
 }
 
 function writePkgAsync(logicalDirname: string, data: FsPkg) {
-    nodeutil.mkdirP(userProjectsDir);
     let dirname = path.join(userProjectsDir, logicalDirname)
 
     nodeutil.mkdirP(dirname)
@@ -163,7 +186,6 @@ function writePkgAsync(logicalDirname: string, data: FsPkg) {
 }
 
 function returnDirAsync(logicalDirname: string, depth: number): Promise<FsPkg[]> {
-    nodeutil.mkdirP(userProjectsDir);
     logicalDirname = logicalDirname.replace(/^\//, "")
     let dirname = path.join(userProjectsDir, logicalDirname)
     return existsAsync(path.join(dirname, pxt.configName))
@@ -495,13 +517,14 @@ export interface ServeOptions {
     localToken: string;
     autoStart: boolean;
     packaged?: boolean;
+    electron?: boolean;
 }
 
 let serveOptions: ServeOptions;
 export function serveAsync(options: ServeOptions) {
     serveOptions = options;
 
-    setupRootDir()
+    setupRootDir();
 
     nodeutil.mkdirP(tempDir)
 
@@ -599,7 +622,7 @@ export function serveAsync(options: ServeOptions) {
         }
 
         if (pathname == "/--docs") {
-            sendFile(path.join(publicDir,  'docs.html'));
+            sendFile(path.join(publicDir, 'docs.html'));
             return
         }
 

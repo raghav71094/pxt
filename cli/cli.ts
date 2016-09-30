@@ -1341,20 +1341,24 @@ function renderDocs(localDir: string) {
     console.log("Docs written.")
 }
 
-export function serveAsync(arg?: string) {
+export function serveAsync(...args: string[]) {
     forceCloudBuild = !globalConfig.localBuild
+    let hasArg = (arg: string): boolean => {
+        return args && args.length && args.indexOf(arg) !== -1;
+    };
+
     let justServe = false
     let packaged = false
-    if (arg == "-yt") {
+    if (hasArg("-yt")) {
         forceCloudBuild = false
-    } else if (arg == "-cloud") {
+    } else if (hasArg("-cloud")) {
         forceCloudBuild = true
-    } else if (arg == "-just") {
+    } else if (hasArg("-just")) {
         justServe = true
-    } else if (arg == "-pkg") {
+    } else if (hasArg("-pkg")) {
         justServe = true
         packaged = true
-    } else if (arg == "-no-browser") {
+    } else if (hasArg("-no-browser")) {
         justServe = true
         globalConfig.noAutoStart = true
     }
@@ -1384,7 +1388,8 @@ export function serveAsync(arg?: string) {
         .then(() => server.serveAsync({
             localToken: localToken,
             autoStart: !globalConfig.noAutoStart,
-            packaged: packaged
+            packaged: packaged,
+            electron: hasArg("-electron")
         }))
 }
 
