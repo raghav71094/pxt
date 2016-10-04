@@ -220,7 +220,11 @@ function handleApiAsync(req: http.IncomingMessage, res: http.ServerResponse, elt
         return readJsonAsync()
             .then(d => deployCoreAsync(d))
             .catch((e) => {
-                throwError(404, "Board not found");
+                if (e.code === "NOBOARD") {
+                    throwError(404);
+                } else {
+                    throwError(503);
+                }
             });
     else throw throwError(400)
 }
