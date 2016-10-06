@@ -3066,15 +3066,7 @@ function buildCoreAsync(mode: BuildOption) {
                     console.log("no deploy functionality defined by this target")
                     return null;
                 }
-                return pxt.commands.deployCoreAsync(res)
-                    .catch((e) => {
-                        if (isCli && e.code === "NOBOARD") {
-                            // No op, error has already been logged
-                        } else {
-                            // Propagate
-                            throw e;
-                        }
-                    });
+                return pxt.commands.deployCoreAsync(res);
             }
             else if (mode == BuildOption.Run)
                 return runCoreAsync(res);
@@ -3387,9 +3379,7 @@ function errorHandler(reason: any) {
     process.exit(20)
 }
 
-let isCli = false;
 export function mainCli(targetDir: string, args: string[] = process.argv.slice(2)) {
-    isCli = true;
     process.on("unhandledRejection", errorHandler);
     process.on('uncaughtException', errorHandler);
 
